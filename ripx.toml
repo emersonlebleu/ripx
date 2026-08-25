@@ -1,0 +1,11 @@
+version = 1
+
+[[projects]]
+name = "engine"
+lang = "rust"
+roots = ["crates/ripx-core", "crates/ripx-cli"]
+
+[[projects]]
+name = "extension"
+lang = "typescript"
+roots = ["extension/src"]
