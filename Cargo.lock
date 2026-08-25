@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "ripx"
+name = "ripx-core"
 version = "0.1.0"
