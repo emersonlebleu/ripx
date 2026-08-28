@@ -1,32 +1,31 @@
-use ripx_core::{analyze_dir, load_manifest};
-use std::path::Path;
+//! A thin client over ripx-core: parse arguments, call the engine, render the
+//! graph. No analysis happens here.
+
+mod options;
+mod text;
+
+use options::{Format, Options};
 
 fn main() {
-  // TODO: we will maybe want to allow our tool to walk up the tree looking for our ripx.toml
-  let manifest_path = std::env::args()
-    .nth(1)
-    .unwrap_or_else(|| "ripx.toml".to_string());
-
-  let manifest = match load_manifest(Path::new(&manifest_path)) {
-    Ok(m) => m,
-    Err(e) => {
-      eprintln!("sorry, {e}");
-      std::process::exit(1);
-    }
-  };
-
-  for project in &manifest.projects {
-    if project.lang != "rust" {
-      println!(
-        "skipping {} ({}): not yet supported",
-        project.name, project.lang
-      );
-      continue;
-    }
-
-    println!("\n=== project: {} ===", project.name);
-    for root in &project.roots {
-      analyze_dir(Path::new(root));
-    }
+  if let Err(problem) = run() {
+    eprintln!("sorry, {problem}");
+    std::process::exit(1);
   }
+}
+
+fn run() -> Result<(), String> {
+  let options = Options::from_args(std::env::args().skip(1))?;
+  let graph = ripx_core::analyze(&options.manifest)?;
+
+  // Diagnostics go to stderr so stdout stays a clean, pipeable report.
+  for warning in graph.warnings() {
+    eprintln!("warning: {warning}");
+  }
+
+  match options.format {
+    Format::Json => println!("{}", graph.to_json()?),
+    Format::Text => print!("{}", text::render(&graph)),
+  }
+
+  Ok(())
 }
